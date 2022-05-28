@@ -1,0 +1,97 @@
+name: Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'Application name. Will be used in docker image name'
+        required: true
+        type: string
+      app-folder:
+        description: 'Application location folder'
+        required: false
+        type: string
+        default: "."
+      stop-release-filename:
+        description: 'If file exists then deploying to production will be omited'
+        required: false
+        type: string
+        default: ""
+    secrets:
+#      dev-repo:
+#        required: true
+#      dev-k8s-context:
+#        required: true
+#      prod-repo:
+#        required: true
+#      prod-k8s-context:
+#        required: true
+#      gha-pat:
+#        required: true
+
+jobs:
+#  check-allow-release:
+#    runs-on: [ self-hosted, ubuntu-latest ]
+#    outputs:
+#      release-to-prod: ${{ steps.allow-release.outputs.release-to-prod }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Check allow release
+#        id: allow-release
+#        uses: pb-digital/actions/check-allow-release@v2
+#        with:
+#          app-folder: ${{ inputs.app-folder }}
+#          deploy-to-rsrv: ${{ inputs.deploy-to-rsrv }}
+#          stop-release-filename: ${{ inputs.stop-release-filename }}
+  build-code:
+    runs-on: [ self-hosted, ubuntu-latest ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build and Test
+        uses: pb-digital/actions/java-build@v1
+        with:
+          app-folder: ${{ inputs.app-folder }}
+#  deploy_dev:
+#    if: ${{ github.ref_name == 'develop' }}
+#    needs: [ validate-code, validate-infra ]
+#    runs-on: [ self-hosted, ubuntu-latest ]
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Build
+#        uses: pb-digital/actions/java-gradle-build@v2
+#        with:
+#          build-only: true
+#          app-folder: ${{ inputs.app-folder }}
+#      - name: "Deploy"
+#        id: deploy
+#        uses: pb-digital/actions/deploy-msc@v2
+#        with:
+#          appName: ${{ inputs.app-name }}
+#          app-folder: ${{ inputs.app-folder }}
+#          additional-tag: dev
+#          dockerRepo: ${{ secrets.dev-repo }}
+#          k8s-context: ${{ secrets.dev-k8s-context }}
+#  deploy_prod:
+#    if: ${{ needs.check-allow-release.outputs.release-to-prod == 'true' }}
+#    needs: [ validate-code, validate-infra, check-allow-release ]
+#    runs-on: [ self-hosted, ubuntu-latest ]
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v2
+#      - name: Build
+#        uses: pb-digital/actions/java-gradle-build@v2
+#        with:
+#          build-only: true
+#          app-folder: ${{ inputs.app-folder }}
+#      - name: "Deploy"
+#        id: deploy
+#        uses: pb-digital/actions/deploy-msc@v2
+#        with:
+#          appName: ${{ inputs.app-name }}
+#          app-folder: ${{ inputs.app-folder }}
+#          additional-tag: prod
+#          dockerRepo: ${{ secrets.prod-repo }}
+#          k8s-context: ${{ secrets.prod-k8s-context }}
