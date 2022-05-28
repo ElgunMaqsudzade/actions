@@ -1,0 +1,29 @@
+name: "Remove artifacts"
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  delete-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete artifacts
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ACTION_TOKEN }}
+          script: |
+            const ownerName = "ElgunMaqsudzade/actions"
+            let count = 1
+            let response = await github.request(`GET /repos/${ownerName}/actions/artifacts?per_page=100&page=${count}`)
+            let artifacts = response.data.artifacts
+            console.log(`Checking repo - ${ownerName} for artifacts`)
+            while (artifacts.length > 0) {
+                count++
+                for (let artifact of artifacts) {
+                    console.log(`Deleting artifact with id ${artifact.id}`)
+                    await github.request(`DELETE /repos/${ownerName}/actions/artifacts/${artifact.id}`)
+                }
+                response = await github.request(`GET /repos/${ownerName}/actions/artifacts?per_page=100&page=${count}`)
+            }
+              

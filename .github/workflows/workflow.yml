@@ -3,21 +3,16 @@ name: Build and Deploy
 on:
   workflow_call:
     inputs:
-      app-name:
+      app_name:
         description: 'Application name. Will be used in docker image name'
         required: true
         type: string
-      app-folder:
+      directory:
         description: 'Application location folder'
         required: false
         type: string
         default: "."
-      stop-release-filename:
-        description: 'If file exists then deploying to production will be omited'
-        required: false
-        type: string
-        default: ""
-    secrets:
+#    secrets:
 #      dev-repo:
 #        required: true
 #      dev-k8s-context:
@@ -30,68 +25,25 @@ on:
 #        required: true
 
 jobs:
-#  check-allow-release:
-#    runs-on: [ self-hosted, ubuntu-latest ]
-#    outputs:
-#      release-to-prod: ${{ steps.allow-release.outputs.release-to-prod }}
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#      - name: Check allow release
-#        id: allow-release
-#        uses: pb-digital/actions/check-allow-release@v2
-#        with:
-#          app-folder: ${{ inputs.app-folder }}
-#          deploy-to-rsrv: ${{ inputs.deploy-to-rsrv }}
-#          stop-release-filename: ${{ inputs.stop-release-filename }}
   build-code:
-    runs-on: [ self-hosted, ubuntu-latest ]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build and Test
-        uses: pb-digital/actions/java-build@v1
+        id: build-java
+        uses: elgunmaqsudzade/actions/build-java@5c9f3aa631439f964266f399025efc2347328725
         with:
-          app-folder: ${{ inputs.app-folder }}
-#  deploy_dev:
-#    if: ${{ github.ref_name == 'develop' }}
-#    needs: [ validate-code, validate-infra ]
-#    runs-on: [ self-hosted, ubuntu-latest ]
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#      - name: Build
-#        uses: pb-digital/actions/java-gradle-build@v2
-#        with:
-#          build-only: true
-#          app-folder: ${{ inputs.app-folder }}
-#      - name: "Deploy"
-#        id: deploy
-#        uses: pb-digital/actions/deploy-msc@v2
-#        with:
-#          appName: ${{ inputs.app-name }}
-#          app-folder: ${{ inputs.app-folder }}
-#          additional-tag: dev
-#          dockerRepo: ${{ secrets.dev-repo }}
-#          k8s-context: ${{ secrets.dev-k8s-context }}
-#  deploy_prod:
-#    if: ${{ needs.check-allow-release.outputs.release-to-prod == 'true' }}
-#    needs: [ validate-code, validate-infra, check-allow-release ]
-#    runs-on: [ self-hosted, ubuntu-latest ]
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
-#      - name: Build
-#        uses: pb-digital/actions/java-gradle-build@v2
-#        with:
-#          build-only: true
-#          app-folder: ${{ inputs.app-folder }}
-#      - name: "Deploy"
-#        id: deploy
-#        uses: pb-digital/actions/deploy-msc@v2
-#        with:
-#          appName: ${{ inputs.app-name }}
-#          app-folder: ${{ inputs.app-folder }}
-#          additional-tag: prod
-#          dockerRepo: ${{ secrets.prod-repo }}
-#          k8s-context: ${{ secrets.prod-k8s-context }}
+          directory: ${{ inputs.directory }}
+  deploy_dev:
+    needs: [ build-code ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Deploy"
+        id: deploy
+        uses: elgunmaqsudzade/actions/deployer@5c9f3aa631439f964266f399025efc2347328725
+        with:
+          app_name: ${{ inputs.app_name }}
+          directory: ${{ inputs.directory }}
+          action_token: ${{ secrets.ACTION_TOKEN }}
+#          docker_repo: ${{ secrets.dev-repo }}

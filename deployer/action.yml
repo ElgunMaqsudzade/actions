@@ -1,0 +1,79 @@
+name: deployer
+description: "Deploy project"
+inputs:
+  directory:
+    description: "Application folder"
+    required: false
+    default: "."
+  action_token:
+    description: "Action token"
+    required: true
+  app_name:
+    description: "Application name"
+    required: true
+  docker_repo:
+    description: "Docker repo url"
+    required: false
+    default: "elgun883"
+
+runs:
+  using: composite
+  steps:
+    - id: define-image-tag
+      name: "Define docker image tag"
+      shell: bash
+      run: |
+        echo "::set-output name=image_tag::$(echo "${{inputs.docker_repo}}/${{inputs.app_name}}:${{github.run_number}}")"
+
+    - name: Download jar file
+      uses: actions/download-artifact@v3
+      with:
+        name: "jar-${{github.run_number}}"
+
+    - name: Download dockerfile
+      uses: actions/download-artifact@v3
+      with:
+        name: "docker-${{github.run_number}}"
+
+    - id: build-docker-image
+      name: "Build docker image"
+      working-directory: ${{ inputs.app_folder }}
+      run: |
+        echo "Building image ${{ steps.define-image-tag.outputs.image_tag }} ..."
+        docker build -t ${{ steps.define-image-tag.outputs.image_tag }} --build-arg arg=${{github.run_number}} .
+      shell: bash
+
+    - id: push-docker-image
+      shell: bash
+      name: "Push docker image to image repository"
+      run: ls
+
+#  |
+#  echo "Pushing image to ${{ steps.define-image-tag.outputs.image_tag }} ..."
+#  docker push ${{ steps.define-image-tag.outputs.image_tag }}
+
+    - id: remove-local-image
+      name: "Remove image from local docker"
+      shell: bash
+      run: |
+        echo "Removing image ${{ steps.define-image-tag.outputs.image_tag }} ..."
+        docker rmi ${{ steps.define-image-tag.outputs.image_tag }}
+
+    - name: Delete artifacts for run
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ inputs.action_token }}
+        script: |
+          const ownerName = "ElgunMaqsudzade/actions"
+          let count = 1
+          let response = await github.request(`GET /repos/${ownerName}/actions/runs/${{github.run_number}}/artifacts?per_page=100&page=${count}`)
+          let artifacts = response.data.artifacts
+          console.log(`Checking repo - ${ownerName} for artifacts`)
+          while (artifacts.length > 0) {
+              count++
+              for (let artifact of artifacts) {
+                  console.log(`Deleting artifact with id ${artifact.id}`)
+                  await github.request(`DELETE /repos/${ownerName}/actions/artifacts/${artifact.id}`)
+              }
+              response = await github.request(`GET /repos/${ownerName}/actions/runs/${{github.run_number}}/artifacts?per_page=100&page=${count}`)
+          }

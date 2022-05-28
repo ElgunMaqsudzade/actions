@@ -1,4 +1,4 @@
-name: java-build
+name: build-java
 description: "Build Java project"
 inputs:
   version:
@@ -13,6 +13,7 @@ inputs:
     description: "Java distribution to use"
     required: false
     default: "temurin"
+
 runs:
   using: composite
   steps:
@@ -23,6 +24,17 @@ runs:
         java-version: ${{ inputs.version }}
         cache: "gradle"
     - name: Test and Package
+      id: gradle-build
       working-directory: ${{ inputs.directory }}
       shell: bash
       run: gradle build
+    - name: Upload jar file
+      uses: actions/upload-artifact@v3
+      with:
+        name: "jar-${{github.run_number}}"
+        path: "build/libs"
+    - name: Upload dockerfile
+      uses: actions/upload-artifact@v3
+      with:
+        name: "docker-${{github.run_number}}"
+        path: "Dockerfile"
